@@ -69,7 +69,7 @@ assert x9[x9 > 5][0].item() == original_val
 
 # 11. Use .clone() to make an explicit copy of a tensor and prove it's independent.
 x11 = torch.tensor([1, 2, 3])
-c11 = None  # TODO
+c11 = x11.clone()  # TODO
 c11[0] = 100
 assert x11[0].item() == 1
 
@@ -81,12 +81,12 @@ assert x12.tolist() == [6, 7, 8]
 # 13. Given a non-contiguous tensor (from a transpose), call .reshape() on it
 #     directly (not .view()) and confirm it still works, storing the result shape.
 x13 = torch.arange(12).reshape(3, 4).t()  # non-contiguous, shape (4,3)
-r13 = torch.arange(12).reshape(2,6).t()  # TODO: reshape to (2, 6)
+r13 = x13.reshape(2,6)  # TODO: reshape to (2, 6)
 assert tuple(r13.shape) == (2, 6)
 
 # 14. Permute a (2,3,4) tensor to shape (4,2,3) using .permute(), store in p14.
 x14 = torch.rand(2, 3, 4)
-p14 = None  # TODO
+p14 = x14.permute(2,0,1)  # TODO
 assert tuple(p14.shape) == (4, 2, 3)
 
 # 15. Try calling .view() (not .reshape()) directly on a transposed (non-contiguous)
@@ -94,28 +94,32 @@ assert tuple(p14.shape) == (4, 2, 3)
 x15 = torch.arange(12).reshape(3, 4).t()
 caught15 = False
 # TODO: try x15.view(2, 6), except RuntimeError: set caught15 = True
+try:
+    x15.view(2,6)
+except RuntimeError as e:
+    caught15=True
 assert caught15 is True
 
 # 16. Use unsqueeze to turn a (5,) tensor into a (1,5) tensor, store in u16.
 x16 = torch.arange(5)
-u16 = None  # TODO
+u16 = torch.unsqueeze(x16,0)  # TODO
 assert tuple(u16.shape) == (1, 5)
 
 # 17. Use squeeze to remove all size-1 dims from a (1,3,1,4) tensor, store in sq17.
 x17 = torch.rand(1, 3, 1, 4)
-sq17 = None  # TODO
+sq17 = torch.squeeze(x17)  # TODO
 assert tuple(sq17.shape) == (3, 4)
 
 # 18. Broadcast-multiply a (3,4) tensor by a scalar tensor torch.tensor(2.0),
 #     store the result shape (should be unchanged) in shape18.
 x18 = torch.rand(3, 4)
-shape18 = None  # TODO
+shape18 = tuple((x18 * torch.tensor(2.0)).shape)  # TODO
 assert shape18 == (3, 4)
 
 # 19. Given x = torch.arange(24).reshape(2,3,4), flatten it to 1D with .flatten(),
 #     and confirm the number of elements is preserved.
 x19 = torch.arange(24).reshape(2, 3, 4)
-f19 = None  # TODO
+f19 = x19.flatten()  # TODO
 assert f19.numel() == 24 and f19.dim() == 1
 
 # 20. Demonstrate the in-place-vs-autograd trap: create x = torch.tensor([1.0],
@@ -124,6 +128,10 @@ assert f19.numel() == 24 and f19.dim() == 1
 caught20 = False
 x20 = torch.tensor([1.0], requires_grad=True)
 # TODO: try x20.add_(1), except RuntimeError: set caught20 = True
+try:
+    x20.add_(1)
+except RuntimeError:
+    caught20=True
 assert caught20 is True
 
 print("All 20 exercises passed!")
