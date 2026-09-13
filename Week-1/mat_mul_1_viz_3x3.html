@@ -1,0 +1,465 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>E First, Then D</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --bg: #f2f3f6;
+    --panel: #ffffff;
+    --panel-2: #e9ebf0;
+    --ink: #1a1f2b;
+    --muted: #5f6675;
+    --line: #d3d7e0;
+    --grid: #d8dbe3;
+    --axis: #a8aeba;
+    --i: #3b8f3c;
+    --j: #cf3f34;
+    --k: #2a7fa8;
+    --prod: #a86f00;
+    --prod-fill: rgba(212, 150, 20, 0.18);
+    --focus: #3b6fd6;
+    --shadow: 0 1px 2px rgba(20, 24, 36, 0.06), 0 8px 24px rgba(20, 24, 36, 0.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #13161d;
+      --panel: #1a1e27;
+      --panel-2: #222734;
+      --ink: #e9ebf1;
+      --muted: #9aa2b3;
+      --line: #2c3240;
+      --grid: #262b37;
+      --axis: #454c5c;
+      --i: #83c167;
+      --j: #fc6255;
+      --k: #58c4dd;
+      --prod: #f5c542;
+      --prod-fill: rgba(245, 197, 66, 0.16);
+      --focus: #7aa2ff;
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.25);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #13161d;
+    --panel: #1a1e27;
+    --panel-2: #222734;
+    --ink: #e9ebf1;
+    --muted: #9aa2b3;
+    --line: #2c3240;
+    --grid: #262b37;
+    --axis: #454c5c;
+    --i: #83c167;
+    --j: #fc6255;
+    --k: #58c4dd;
+    --prod: #f5c542;
+    --prod-fill: rgba(245, 197, 66, 0.16);
+    --focus: #7aa2ff;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.25);
+  }
+
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: "Newsreader", Georgia, "Times New Roman", serif; font-size: 17px; line-height: 1.45; }
+  .mono { font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace; font-variant-numeric: tabular-nums; }
+  .page { max-width: 1280px; margin: 0 auto; padding: 28px 24px 48px; }
+
+  header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 28px; margin-bottom: 20px; }
+  header h1 { font-size: 34px; font-weight: 500; margin: 0; letter-spacing: -0.01em; text-wrap: balance; }
+  header p { margin: 0; color: var(--muted); font-size: 17px; max-width: 62ch; }
+  header p code { font-family: "JetBrains Mono", monospace; font-size: 14px; color: var(--ink); }
+
+  .main { display: grid; grid-template-columns: minmax(0, 1fr) 420px; gap: 20px; align-items: start; }
+  @media (max-width: 960px) { .main { grid-template-columns: 1fr; } }
+
+  .stage { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; box-shadow: var(--shadow); overflow: hidden; }
+  .canvas-wrap { position: relative; aspect-ratio: 1 / 1; max-height: 660px; width: 100%; }
+  canvas { display: block; width: 100%; height: 100%; cursor: grab; touch-action: none; }
+  canvas.dragging { cursor: grabbing; }
+  .stage-label { position: absolute; top: 12px; left: 14px; font-size: 13px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); font-family: "JetBrains Mono", monospace; }
+  .hint { position: absolute; bottom: 10px; left: 14px; font-size: 12px; color: var(--muted); font-family: "JetBrains Mono", monospace; }
+  .live { position: absolute; top: 12px; right: 14px; display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); font-family: "JetBrains Mono", monospace; }
+
+  .controls { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; padding: 12px 14px; border-top: 1px solid var(--line); background: var(--panel); }
+  .btn { font: inherit; font-family: "JetBrains Mono", monospace; font-size: 13px; padding: 6px 12px; border-radius: 4px; border: 1px solid var(--line); background: var(--panel-2); color: var(--ink); cursor: pointer; }
+  .btn:hover { border-color: var(--axis); }
+  .btn:focus-visible, input:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
+  .btn.primary { background: var(--ink); color: var(--bg); border-color: var(--ink); min-width: 74px; }
+  .btn[aria-pressed="true"] { border-color: var(--prod); color: var(--prod); }
+  .scrub { flex: 1 1 140px; display: flex; align-items: center; }
+  .scrub input[type="range"] { flex: 1; accent-color: var(--prod); }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 4px; overflow: hidden; }
+  .seg button { font-family: "JetBrains Mono", monospace; font-size: 13px; padding: 6px 12px; border: 0; background: var(--panel); color: var(--muted); cursor: pointer; }
+  .seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+
+  .rail { display: flex; flex-direction: column; gap: 14px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 14px 16px; }
+  .card h2 { font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; font-family: "JetBrains Mono", monospace; font-weight: 500; color: var(--muted); margin: 0 0 10px; }
+
+  .eq { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-family: "JetBrains Mono", monospace; font-size: 14px; }
+  .eq .op { color: var(--muted); }
+  .eq .grp { display: inline-flex; align-items: center; gap: 10px; white-space: nowrap; }
+  .mat { display: inline-grid; grid-template-columns: auto auto auto; gap: 2px 6px; padding: 4px 8px; position: relative; font-family: "JetBrains Mono", monospace; font-variant-numeric: tabular-nums; }
+  .mat::before, .mat::after { content: ""; position: absolute; top: 0; bottom: 0; width: 6px; border: 1.5px solid var(--ink); }
+  .mat::before { left: 0; border-right: 0; border-radius: 3px 0 0 3px; }
+  .mat::after { right: 0; border-left: 0; border-radius: 0 3px 3px 0; }
+  .mat span { min-width: 3ch; text-align: right; }
+  .mat input { width: 3.4ch; font: inherit; font-size: 14px; text-align: right; background: var(--panel-2); color: var(--ink); border: 1px solid transparent; border-radius: 3px; padding: 1px 2px; -moz-appearance: textfield; }
+  .mat input::-webkit-outer-spin-button, .mat input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .mat input:hover { border-color: var(--axis); }
+  .mat .ci { color: var(--i); } .mat .cj { color: var(--j); } .mat .ck { color: var(--k); }
+  .mat-name { font-style: italic; font-family: "Newsreader", serif; font-size: 20px; }
+
+  .presets { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .presets .btn { font-size: 12px; padding: 4px 9px; }
+
+  .step { display: grid; grid-template-columns: 22px 1fr; gap: 10px; padding: 10px 0; border-top: 1px solid var(--line); cursor: pointer; }
+  .step:first-child { border-top: 0; }
+  .step .dot { width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid var(--axis); margin-top: 7px; justify-self: center; background: transparent; }
+  .step[data-active="true"] .dot { background: var(--prod); border-color: var(--prod); }
+  .step h3 { margin: 0; font-size: 18px; font-weight: 500; }
+  .step p { margin: 4px 0 0; color: var(--muted); font-size: 15.5px; }
+  .step[data-active="true"] p { color: var(--ink); }
+  .step .calc { display: none; margin-top: 8px; font-family: "JetBrains Mono", monospace; font-size: 12.5px; line-height: 1.7; color: var(--ink); background: var(--panel-2); border-radius: 4px; padding: 8px 10px; overflow-x: auto; white-space: nowrap; }
+  .step[data-active="true"] .calc { display: block; }
+  .vi { color: var(--i); } .vj { color: var(--j); } .vk { color: var(--k); }
+
+  .note { color: var(--muted); font-size: 15.5px; max-width: 72ch; margin: 22px 0 0; }
+  .note b { color: var(--ink); font-weight: 500; }
+  .note .mono { font-size: 13.5px; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="page">
+  <header>
+    <h1>E first, then D</h1>
+    <p>Your script computes <code>F = D*E</code>. Same rule as before, one dimension up: space is moved by E, then that result is moved by D. Now there are three arrows to follow, and the unit square becomes a unit cube.</p>
+  </header>
+
+  <div class="main">
+    <div class="stage">
+      <div class="canvas-wrap">
+        <canvas id="cv"></canvas>
+        <div class="stage-label" id="stageLabel">space at rest</div>
+        <div class="live"><span>now</span><span class="mat" id="liveMat"><span class="ci">1</span><span class="cj">0</span><span class="ck">0</span><span class="ci">0</span><span class="cj">1</span><span class="ck">0</span><span class="ci">0</span><span class="cj">0</span><span class="ck">1</span></span></div>
+        <div class="hint">drag to orbit</div>
+      </div>
+      <div class="controls">
+        <button class="btn" id="prev" aria-label="Previous step">&#9664;</button>
+        <button class="btn primary" id="play">Play</button>
+        <button class="btn" id="next" aria-label="Next step">&#9654;</button>
+        <div class="scrub"><input type="range" id="scrub" min="0" max="300" value="0" step="1" aria-label="Scrub through the transformation"></div>
+        <button class="btn" id="spin" aria-pressed="true">Spin</button>
+        <div class="seg" role="group" aria-label="Order of multiplication">
+          <button id="orderDE" aria-pressed="true">DE &middot; E then D</button>
+          <button id="orderED" aria-pressed="false">ED &middot; D then E</button>
+        </div>
+      </div>
+    </div>
+
+    <aside class="rail">
+      <div class="card">
+        <h2>The matrices (edit any cell)</h2>
+        <div class="eq" id="eqRow"></div>
+        <div class="presets">
+          <button class="btn" data-preset="file">From mat_mul_1.py</button>
+          <button class="btn" data-preset="rotstretch">Rotate then stretch</button>
+          <button class="btn" data-preset="shearflip">Shear then flip</button>
+        </div>
+      </div>
+      <div class="card">
+        <h2>What happens, step by step</h2>
+        <div id="steps"></div>
+      </div>
+    </aside>
+  </div>
+
+  <p class="note" id="note"></p>
+</div>
+
+<script>
+(function () {
+  const cv = document.getElementById('cv');
+  const ctx = cv.getContext('2d');
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const HAT = ['î', 'ĵ', 'k̂'];
+  const COLS = ['--i', '--j', '--k'];
+  const CLS = ['ci', 'cj', 'ck'];
+  const VCLS = ['vi', 'vj', 'vk'];
+
+  const PRESETS = {
+    file:       { D: [[1, 2, 3], [4, 6, 7], [5, 8, 9]], E: [[6, 3, 0], [5, 2, -1], [4, 1, -2]] },
+    rotstretch: { D: [[2, 0, 0], [0, 1, 0], [0, 0, 0.5]], E: [[0, -1, 0], [1, 0, 0], [0, 0, 1]] },
+    shearflip:  { D: [[1, 0, 0], [0, 1, 0], [0, 0, -1]], E: [[1, 1, 0], [0, 1, 0], [0, 0, 1]] },
+  };
+  let D = PRESETS.file.D.map(r => r.slice());
+  let E = PRESETS.file.E.map(r => r.slice());
+  let order = 'DE';   // 'DE' = E first then D ; 'ED' = D first then E
+  let p = 0, playing = false, anim = null;
+  let yaw = -0.62, pitch = 0.42, spinning = !reduced, dragging = false, lastX = 0, lastY = 0;
+
+  const I = [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
+  const mul = (M, N) => M.map((r, i) => N[0].map((_, j) => r.reduce((s, x, k) => s + x * N[k][j], 0)));
+  const apply = (M, v) => M.map(r => r[0] * v[0] + r[1] * v[1] + r[2] * v[2]);
+  const col = (M, j) => [M[0][j], M[1][j], M[2][j]];
+  const det = M => M[0][0] * (M[1][1] * M[2][2] - M[1][2] * M[2][1]) - M[0][1] * (M[1][0] * M[2][2] - M[1][2] * M[2][0]) + M[0][2] * (M[1][0] * M[2][1] - M[1][1] * M[2][0]);
+  const lerpM = (M, N, t) => M.map((r, i) => r.map((x, j) => x + (N[i][j] - x) * t));
+  const fmt = x => { const r = +x.toFixed(6); return Number.isInteger(r) ? String(Math.round(r)) : (+x.toFixed(2)).toString(); };
+  const vec = v => `(${v.map(fmt).join(', ')})`;
+
+  function roles() {
+    const first = order === 'DE' ? E : D, second = order === 'DE' ? D : E;
+    return { first, second, firstName: order === 'DE' ? 'E' : 'D', secondName: order === 'DE' ? 'D' : 'E', product: mul(second, first), productName: order };
+  }
+  function stages() { const r = roles(); return [I, r.first, r.product, r.product]; }
+  function currentM() { const S = stages(); const k = Math.min(2, Math.floor(p)); return lerpM(S[k], S[k + 1], Math.min(1, p - k)); }
+
+  // ---------- 3D camera ----------
+  const CORNERS = [[0,0,0],[1,0,0],[0,1,0],[0,0,1],[1,1,0],[1,0,1],[0,1,1],[1,1,1]];
+  function fitFor(M) {
+    const pts = CORNERS.map(c => apply(M, c));
+    const lo = [0, 1, 2].map(i => Math.min(...pts.map(q => q[i]))), hi = [0, 1, 2].map(i => Math.max(...pts.map(q => q[i])));
+    const center = lo.map((l, i) => (l + hi[i]) / 2);
+    const radius = Math.max(1.3, ...pts.map(q => Math.hypot(q[0] - center[0], q[1] - center[1], q[2] - center[2])));
+    return { center, radius };
+  }
+  function currentFit() {
+    const S = stages(); const k = Math.min(2, Math.floor(p)); const t = Math.min(1, p - k);
+    const a = fitFor(S[k]), b = fitFor(S[k + 1]);
+    return { center: a.center.map((x, i) => x + (b.center[i] - x) * t), radius: Math.exp(Math.log(a.radius) + (Math.log(b.radius) - Math.log(a.radius)) * t) };
+  }
+  function makeProjector(W, H) {
+    const fit = currentFit();
+    const scale = 0.40 * Math.min(W, H) / fit.radius;
+    const cy = Math.cos(yaw), sy = Math.sin(yaw), cp = Math.cos(pitch), sp = Math.sin(pitch);
+    const F = 5.5 * fit.radius;
+    return v => {
+      const x = v[0] - fit.center[0], y = v[1] - fit.center[1], z = v[2] - fit.center[2];
+      const x1 = x * cy - y * sy, y1 = x * sy + y * cy;
+      const y2 = y1 * cp - z * sp, z2 = y1 * sp + z * cp;
+      const f = F / (F + y2);
+      return [W / 2 + x1 * f * scale, H / 2 - z2 * f * scale, y2];
+    };
+  }
+  function nice(x) { const e = Math.pow(10, Math.floor(Math.log10(x))); for (const m of [1, 2, 5, 10]) if (m * e >= x) return m * e; return 10 * e; }
+  function css(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+
+  // ---------- drawing ----------
+  function draw() {
+    const dpr = window.devicePixelRatio || 1;
+    const W = cv.clientWidth, H = cv.clientHeight;
+    if (cv.width !== Math.round(W * dpr) || cv.height !== Math.round(H * dpr)) { cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); }
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, W, H);
+    const P = makeProjector(W, H);
+    const M = currentM();
+    const fit = currentFit();
+    const colors = { grid: css('--grid'), axis: css('--axis'), prod: css('--prod'), fill: css('--prod-fill'), panel: css('--panel'), muted: css('--muted'), ink: css('--ink'), v: COLS.map(css) };
+
+    // fixed floor grid on the z = 0 plane, sized to the current view
+    const ext = nice(fit.radius * 1.2), step = nice(ext / 4);
+    const gx0 = Math.floor((fit.center[0] - ext) / step) * step, gx1 = Math.ceil((fit.center[0] + ext) / step) * step;
+    const gy0 = Math.floor((fit.center[1] - ext) / step) * step, gy1 = Math.ceil((fit.center[1] + ext) / step) * step;
+    ctx.lineWidth = 1; ctx.strokeStyle = colors.grid; ctx.beginPath();
+    for (let x = gx0; x <= gx1 + 1e-9; x += step) { const a = P([x, gy0, 0]), b = P([x, gy1, 0]); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); }
+    for (let y = gy0; y <= gy1 + 1e-9; y += step) { const a = P([gx0, y, 0]), b = P([gx1, y, 0]); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); }
+    ctx.stroke();
+
+    // fixed axes with a few tick labels
+    const axisLen = ext;
+    ctx.strokeStyle = colors.axis; ctx.lineWidth = 1.2; ctx.beginPath();
+    [[axisLen, 0, 0], [0, axisLen, 0], [0, 0, axisLen]].forEach(e => { const a = P([-e[0], -e[1], -e[2]]), b = P(e); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); });
+    ctx.stroke();
+    ctx.font = '11px "JetBrains Mono", monospace'; ctx.fillStyle = colors.muted; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ['x', 'y', 'z'].forEach((n, i) => { const e = [0, 0, 0]; e[i] = axisLen * 1.06; const q = P(e); ctx.fillText(n, q[0], q[1]); });
+    [step, 2 * step, 3 * step].forEach(t => { if (t > axisLen) return; [0, 1, 2].forEach(i => { const e = [0, 0, 0]; e[i] = t; const q = P(e); ctx.fillText(fmt(t), q[0] + (i === 2 ? -12 : 0), q[1] + (i === 2 ? 0 : 10)); }); });
+
+    // image of the unit cube: faces sorted far-to-near
+    const V = CORNERS.map(c => P(apply(M, c)));
+    const FACES = [[0,1,4,2],[3,5,7,6],[0,1,5,3],[2,4,7,6],[0,2,6,3],[1,4,7,5]];
+    const sorted = FACES.map(f => ({ f, d: f.reduce((s, i) => s + V[i][2], 0) / 4 })).sort((a, b) => b.d - a.d);
+    ctx.lineJoin = 'round';
+    sorted.forEach(({ f }) => {
+      ctx.beginPath(); ctx.moveTo(V[f[0]][0], V[f[0]][1]); for (let i = 1; i < 4; i++) ctx.lineTo(V[f[i]][0], V[f[i]][1]); ctx.closePath();
+      ctx.fillStyle = colors.fill; ctx.fill(); ctx.strokeStyle = colors.prod; ctx.lineWidth = 1; ctx.globalAlpha = 0.8; ctx.stroke(); ctx.globalAlpha = 1;
+    });
+
+    // basis arrows, drawn far-to-near so nearer tips sit on top
+    const r = roles();
+    const stageIdx = Math.round(p);
+    const tag = stageIdx <= 0 ? '' : stageIdx === 1 ? `  col of ${r.firstName}` : `  col of ${r.productName}`;
+    const arrows = [0, 1, 2].map(j => ({ j, v: col(M, j), depth: P(col(M, j))[2] })).sort((a, b) => b.depth - a.depth);
+    arrows.forEach(({ j, v }) => arrow(v, colors.v[j], `${HAT[j]} ${vec(v)}${tag}`, j));
+
+    function arrow(to, color, label, j) {
+      const a = P([0, 0, 0]), b = P(to);
+      const dx = b[0] - a[0], dy = b[1] - a[1], L = Math.hypot(dx, dy);
+      if (L < 1) return;
+      const ux = dx / L, uy = dy / L, head = Math.min(11, L * 0.4);
+      ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = 2.5; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0] - ux * head * 0.6, b[1] - uy * head * 0.6); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(b[0], b[1]);
+      ctx.lineTo(b[0] - ux * head - uy * head * 0.5, b[1] - uy * head + ux * head * 0.5);
+      ctx.lineTo(b[0] - ux * head + uy * head * 0.5, b[1] - uy * head - ux * head * 0.5);
+      ctx.closePath(); ctx.fill();
+      const side = j - 1;   // -1, 0, +1 keeps the three labels off each other when arrows nearly coincide
+      const lx = b[0] + ux * 12 - uy * 14 * side, ly = b[1] + uy * 12 + ux * 14 * side;
+      ctx.font = '500 12.5px "JetBrains Mono", monospace'; ctx.textBaseline = 'middle';
+      ctx.textAlign = lx < W / 2 ? 'left' : 'right';
+      const tx = Math.max(8, Math.min(W - 8, lx)), ty = Math.max(12, Math.min(H - 12, ly));
+      ctx.lineWidth = 4; ctx.strokeStyle = colors.panel; ctx.strokeText(label, tx, ty);
+      ctx.fillStyle = color; ctx.fillText(label, tx, ty);
+    }
+
+    const cells = document.querySelectorAll('#liveMat span');
+    M.flat().forEach((x, i) => cells[i].textContent = fmt(x));
+    const labels = ['space at rest', `after ${r.firstName}`, `after ${r.firstName}, then ${r.secondName}`, `after ${r.productName} in one move`];
+    document.getElementById('stageLabel').textContent = labels[Math.min(3, stageIdx)];
+  }
+
+  // ---------- rail ----------
+  function matHTML(M, name, editable, colored) {
+    const cls = j => colored ? CLS[j] : '';
+    const cell = (i, j) => editable
+      ? `<input type="number" step="any" class="${cls(j)}" data-m="${name}" data-i="${i}" data-j="${j}" value="${fmt(M[i][j])}" aria-label="${name} row ${i + 1} column ${j + 1}">`
+      : `<span class="${cls(j)}">${fmt(M[i][j])}</span>`;
+    let s = '';
+    for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) s += cell(i, j);
+    return `<span class="mat">${s}</span>`;
+  }
+  function renderEq() {
+    const r = roles();
+    const left = order === 'DE'
+      ? `<span class="mat-name">D</span>${matHTML(D, 'D', true, false)}<span class="mat-name">E</span>${matHTML(E, 'E', true, true)}`
+      : `<span class="mat-name">E</span>${matHTML(E, 'E', true, false)}<span class="mat-name">D</span>${matHTML(D, 'D', true, true)}`;
+    document.getElementById('eqRow').innerHTML = `${left}<span class="grp"><span class="op">=</span><span class="mat-name">${r.productName}</span>${matHTML(r.product, 'F', false, true)}</span>`;
+    document.querySelectorAll('#eqRow input').forEach(inp => inp.addEventListener('input', onEdit));
+  }
+  function onEdit(e) {
+    const { m, i, j } = e.target.dataset;
+    const v = parseFloat(e.target.value);
+    if (!Number.isFinite(v)) return;
+    (m === 'D' ? D : E)[+i][+j] = v;
+    renderSteps(); renderNote(); draw();
+    const r = roles();
+    const prodCells = document.querySelectorAll('#eqRow .grp .mat span');
+    r.product.flat().forEach((x, k) => prodCells[k].textContent = fmt(x));
+  }
+  function renderSteps() {
+    const r = roles();
+    const F = r.first, S = r.second, C = r.product;
+    const fc = [0, 1, 2].map(j => col(F, j)), sc = [0, 1, 2].map(j => col(S, j)), cc = [0, 1, 2].map(j => col(C, j));
+    const comb = v => `${vec(v)} = ` + v.map((x, j) => `${fmt(x)}·<span class="${VCLS[j]}">${vec(sc[j])}</span>`).join(' + ') + ` = <b>${vec(apply(S, v))}</b>`;
+    const landing = (cols, nm) => [0, 1, 2].map(j => `<span class="${VCLS[j]}">${HAT[j]} → ${vec(cols[j])}</span>`).join('<br>');
+    const dF = det(F);
+    const flatNote = Math.abs(dF) < 1e-9 ? ` Notice the cube has gone completely flat: ${r.firstName} has determinant 0, so all of space lands on a single plane.` : '';
+    const steps = [
+      { t: 'Space at rest', p: `<span class="vi">î</span>, <span class="vj">ĵ</span> and <span class="vk">k̂</span> sit on the x, y and z axes. The yellow box is the unit cube. Where these three arrows go decides where everything goes.`, calc: '' },
+      { t: `${r.firstName} moves first`, p: `The three columns of ${r.firstName} are the landing spots for <span class="vi">î</span>, <span class="vj">ĵ</span> and <span class="vk">k̂</span>. The cube is carried along into a slanted box.${flatNote}`, calc: landing(fc) },
+      { t: `Then ${r.secondName} moves the result`, p: `${r.secondName} takes each landed arrow as a recipe: ${vec(fc[0])} means "${fmt(fc[0][0])} of î, ${fmt(fc[0][1])} of ĵ, ${fmt(fc[0][2])} of k̂". ${r.secondName} knows where those three go, so it knows where the recipe goes.`,
+        calc: fc.map(v => `${r.secondName}·${comb(v)}`).join('<br>') },
+      { t: `That is the product ${r.productName}`, p: `The columns of ${r.productName} are exactly where the three arrows ended up. ${r.productName} alone takes the cube straight here in one move. Two transformations, one matrix.`, calc: landing(cc) },
+    ];
+    const cur = Math.round(p);
+    document.getElementById('steps').innerHTML = steps.map((st, k) =>
+      `<div class="step" data-k="${k}" data-active="${k === cur}"><div class="dot"></div><div><h3>${st.t}</h3><p>${st.p}</p>${st.calc ? `<div class="calc">${st.calc}</div>` : ''}</div></div>`).join('');
+    document.querySelectorAll('.step').forEach(el => el.addEventListener('click', () => goTo(+el.dataset.k)));
+  }
+  function setActiveStep() { const cur = Math.round(p); document.querySelectorAll('.step').forEach(el => el.dataset.active = String(+el.dataset.k === cur)); }
+  function renderNote() {
+    const r = roles();
+    const other = mul(r.first, r.second);
+    const dD = det(D), dE = det(E), dP = det(r.product);
+    let flat = '';
+    if (Math.abs(dE) < 1e-9 || Math.abs(dD) < 1e-9) {
+      const who = Math.abs(dE) < 1e-9 ? 'E' : 'D';
+      flat = ` <b>${who} is singular.</b> Its determinant is 0, so it squashes 3D space onto a plane (its three columns are coplanar` +
+        (who === 'E' && E[0][0] === 6 && E[0][1] === 3 ? `: column 1 minus column 2 equals column 2 minus column 3 equals (3, 3, 3)` : '') +
+        `). Nothing applied before or after can restore the lost dimension, so ${r.productName} is singular too, and neither ${who} nor ${r.productName} has an inverse.`;
+    }
+    document.getElementById('note').innerHTML =
+      `<b>Order matters.</b> ${r.secondName}${r.firstName} sends î to ${vec(col(r.product, 0))}, but ${r.firstName}${r.secondName} sends it to ${vec(col(other, 0))}. ` +
+      `<b>Volumes multiply.</b> The unit cube becomes a box of volume <span class="mono">|det|</span>: <span class="mono">det D = ${fmt(dD)}</span>, <span class="mono">det E = ${fmt(dE)}</span>, <span class="mono">det ${r.productName} = ${fmt(dP)} = (${fmt(dD)})(${fmt(dE)})</span>.` + flat;
+  }
+
+  // ---------- playback and orbit ----------
+  function setP(v) { p = Math.max(0, Math.min(3, v)); document.getElementById('scrub').value = Math.round(p * 100); setActiveStep(); }
+  function goTo(target, ms = 1000) {
+    if (anim) cancelAnimationFrame(anim);
+    stopPlay();
+    if (reduced) { setP(target); return; }
+    const from = p, t0 = performance.now();
+    const ease = x => x < 0.5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2;
+    const tick = now => { const t = Math.min(1, (now - t0) / ms); setP(from + (target - from) * ease(t)); if (t < 1) anim = requestAnimationFrame(tick); else anim = null; };
+    anim = requestAnimationFrame(tick);
+  }
+  const playBtn = document.getElementById('play');
+  function stopPlay() { playing = false; playBtn.textContent = 'Play'; }
+  function startPlay() {
+    if (anim) cancelAnimationFrame(anim);
+    if (p >= 3) setP(0);
+    playing = true; playBtn.textContent = 'Pause';
+    if (reduced) { setP(3); stopPlay(); return; }
+    let last = performance.now();
+    const tick = now => {
+      if (!playing) return;
+      const dt = (now - last) / 1000; last = now;
+      const near = Math.abs(p - Math.round(p)) < 0.02 && Math.round(p) !== 0 && Math.round(p) !== 3;
+      setP(p + dt * (near ? 0.2 : 0.6));
+      if (p >= 3) { stopPlay(); return; }
+      anim = requestAnimationFrame(tick);
+    };
+    anim = requestAnimationFrame(tick);
+  }
+  playBtn.addEventListener('click', () => playing ? stopPlay() : startPlay());
+  document.getElementById('prev').addEventListener('click', () => goTo(Math.max(0, Math.ceil(p - 0.001) - 1)));
+  document.getElementById('next').addEventListener('click', () => goTo(Math.min(3, Math.floor(p + 0.001) + 1)));
+  document.getElementById('scrub').addEventListener('input', e => { if (anim) cancelAnimationFrame(anim); stopPlay(); setP(e.target.value / 100); });
+  const spinBtn = document.getElementById('spin');
+  spinBtn.addEventListener('click', () => { spinning = !spinning; spinBtn.setAttribute('aria-pressed', String(spinning)); });
+  document.addEventListener('keydown', e => {
+    if (e.target.tagName === 'INPUT' && e.target.type !== 'range') return;
+    if (e.key === 'ArrowRight') { e.preventDefault(); document.getElementById('next').click(); }
+    if (e.key === 'ArrowLeft') { e.preventDefault(); document.getElementById('prev').click(); }
+    if (e.key === ' ') { e.preventDefault(); playBtn.click(); }
+  });
+  cv.addEventListener('pointerdown', e => { dragging = true; lastX = e.clientX; lastY = e.clientY; cv.setPointerCapture(e.pointerId); cv.classList.add('dragging'); });
+  cv.addEventListener('pointermove', e => {
+    if (!dragging) return;
+    yaw += (e.clientX - lastX) * 0.008; pitch = Math.max(-1.4, Math.min(1.4, pitch + (e.clientY - lastY) * 0.008));
+    lastX = e.clientX; lastY = e.clientY;
+  });
+  const endDrag = () => { dragging = false; cv.classList.remove('dragging'); };
+  cv.addEventListener('pointerup', endDrag); cv.addEventListener('pointercancel', endDrag);
+
+  function setOrder(o) {
+    order = o;
+    document.getElementById('orderDE').setAttribute('aria-pressed', String(o === 'DE'));
+    document.getElementById('orderED').setAttribute('aria-pressed', String(o === 'ED'));
+    renderEq(); renderSteps(); renderNote();
+  }
+  document.getElementById('orderDE').addEventListener('click', () => setOrder('DE'));
+  document.getElementById('orderED').addEventListener('click', () => setOrder('ED'));
+  document.querySelectorAll('[data-preset]').forEach(b => b.addEventListener('click', () => {
+    const pr = PRESETS[b.dataset.preset];
+    D = pr.D.map(r => r.slice()); E = pr.E.map(r => r.slice());
+    renderEq(); renderSteps(); renderNote(); goTo(0, 500);
+  }));
+
+  // one render loop: the scene redraws every frame so orbit and spin stay smooth
+  let lastFrame = performance.now();
+  function frame(now) {
+    if (spinning && !dragging) yaw += (now - lastFrame) / 1000 * 0.12;
+    lastFrame = now;
+    draw();
+    requestAnimationFrame(frame);
+  }
+  renderEq(); renderSteps(); renderNote(); setP(0);
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

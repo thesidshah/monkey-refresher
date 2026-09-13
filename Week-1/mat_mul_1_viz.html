@@ -1,0 +1,518 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>B First, Then A</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --bg: #f2f3f6;
+    --panel: #ffffff;
+    --panel-2: #e9ebf0;
+    --ink: #1a1f2b;
+    --muted: #5f6675;
+    --line: #d3d7e0;
+    --grid: #dcdfe6;
+    --axis: #a8aeba;
+    --lattice: #6c7488;
+    --i: #3b8f3c;
+    --j: #cf3f34;
+    --prod: #a86f00;
+    --prod-fill: rgba(212, 150, 20, 0.16);
+    --ghost: #7c8496;
+    --focus: #3b6fd6;
+    --shadow: 0 1px 2px rgba(20, 24, 36, 0.06), 0 8px 24px rgba(20, 24, 36, 0.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #13161d;
+      --panel: #1a1e27;
+      --panel-2: #222734;
+      --ink: #e9ebf1;
+      --muted: #9aa2b3;
+      --line: #2c3240;
+      --grid: #242935;
+      --axis: #3b4252;
+      --lattice: #8f99ae;
+      --i: #83c167;
+      --j: #fc6255;
+      --prod: #f5c542;
+      --prod-fill: rgba(245, 197, 66, 0.14);
+      --ghost: #6d7588;
+      --focus: #7aa2ff;
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.25);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #13161d;
+    --panel: #1a1e27;
+    --panel-2: #222734;
+    --ink: #e9ebf1;
+    --muted: #9aa2b3;
+    --line: #2c3240;
+    --grid: #242935;
+    --axis: #3b4252;
+    --lattice: #8f99ae;
+    --i: #83c167;
+    --j: #fc6255;
+    --prod: #f5c542;
+    --prod-fill: rgba(245, 197, 66, 0.14);
+    --ghost: #6d7588;
+    --focus: #7aa2ff;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.25);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Newsreader", Georgia, "Times New Roman", serif;
+    font-size: 17px;
+    line-height: 1.45;
+  }
+  .mono { font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace; font-variant-numeric: tabular-nums; }
+  .page { max-width: 1240px; margin: 0 auto; padding: 28px 24px 48px; }
+
+  header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 28px; margin-bottom: 20px; }
+  header h1 { font-size: 34px; font-weight: 500; margin: 0; letter-spacing: -0.01em; text-wrap: balance; }
+  header p { margin: 0; color: var(--muted); font-size: 17px; max-width: 62ch; }
+  header p code { font-family: "JetBrains Mono", monospace; font-size: 14px; color: var(--ink); }
+
+  .main { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 20px; align-items: start; }
+  @media (max-width: 900px) { .main { grid-template-columns: 1fr; } }
+
+  .stage { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; box-shadow: var(--shadow); overflow: hidden; }
+  .canvas-wrap { position: relative; aspect-ratio: 1 / 1; max-height: 640px; width: 100%; }
+  canvas { display: block; width: 100%; height: 100%; }
+  .stage-label {
+    position: absolute; top: 12px; left: 14px; font-size: 13px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted);
+    font-family: "JetBrains Mono", monospace;
+  }
+  .live { position: absolute; top: 12px; right: 14px; display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); font-family: "JetBrains Mono", monospace; }
+
+  .controls { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; padding: 12px 14px; border-top: 1px solid var(--line); background: var(--panel); }
+  .btn {
+    font: inherit; font-family: "JetBrains Mono", monospace; font-size: 13px; padding: 6px 12px; border-radius: 4px; border: 1px solid var(--line);
+    background: var(--panel-2); color: var(--ink); cursor: pointer;
+  }
+  .btn:hover { border-color: var(--axis); }
+  .btn:focus-visible, input:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
+  .btn.primary { background: var(--ink); color: var(--bg); border-color: var(--ink); min-width: 74px; }
+  .scrub { flex: 1 1 160px; display: flex; align-items: center; gap: 10px; }
+  .scrub input[type="range"] { flex: 1; accent-color: var(--prod); }
+  .scrub .ticks { display: flex; justify-content: space-between; font-family: "JetBrains Mono", monospace; font-size: 11px; color: var(--muted); }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 4px; overflow: hidden; }
+  .seg button { font-family: "JetBrains Mono", monospace; font-size: 13px; padding: 6px 12px; border: 0; background: var(--panel); color: var(--muted); cursor: pointer; }
+  .seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+
+  .rail { display: flex; flex-direction: column; gap: 14px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 14px 16px; }
+  .card h2 { font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; font-family: "JetBrains Mono", monospace; font-weight: 500; color: var(--muted); margin: 0 0 10px; }
+
+  .eq { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-family: "JetBrains Mono", monospace; font-size: 15px; }
+  .eq .op { color: var(--muted); }
+  .eq .grp { display: inline-flex; align-items: center; gap: 10px; white-space: nowrap; }
+  .mat { display: inline-grid; grid-template-columns: auto auto; gap: 2px 8px; padding: 4px 8px; position: relative; font-family: "JetBrains Mono", monospace; font-variant-numeric: tabular-nums; }
+  .mat::before, .mat::after { content: ""; position: absolute; top: 0; bottom: 0; width: 6px; border: 1.5px solid var(--ink); }
+  .mat::before { left: 0; border-right: 0; border-radius: 3px 0 0 3px; }
+  .mat::after { right: 0; border-left: 0; border-radius: 0 3px 3px 0; }
+  .mat span { min-width: 2.2ch; text-align: right; }
+  .mat input { width: 3.6ch; font: inherit; font-size: 15px; text-align: right; background: var(--panel-2); color: var(--ink); border: 1px solid transparent; border-radius: 3px; padding: 1px 3px; -moz-appearance: textfield; }
+  .mat input::-webkit-outer-spin-button, .mat input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .mat input:hover { border-color: var(--axis); }
+  .mat .ci { color: var(--i); } .mat .cj { color: var(--j); }
+  .mat-name { font-style: italic; font-family: "Newsreader", serif; font-size: 20px; }
+
+  .presets { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .presets .btn { font-size: 12px; padding: 4px 9px; }
+
+  .steps { display: flex; flex-direction: column; gap: 0; }
+  .step { display: grid; grid-template-columns: 22px 1fr; gap: 10px; padding: 10px 0; border-top: 1px solid var(--line); cursor: pointer; }
+  .step:first-child { border-top: 0; }
+  .step .dot { width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid var(--axis); margin-top: 7px; justify-self: center; background: transparent; }
+  .step[data-active="true"] .dot { background: var(--prod); border-color: var(--prod); }
+  .step h3 { margin: 0; font-size: 18px; font-weight: 500; }
+  .step p { margin: 4px 0 0; color: var(--muted); font-size: 15.5px; }
+  .step[data-active="true"] p { color: var(--ink); }
+  .step .calc { display: none; margin-top: 8px; font-family: "JetBrains Mono", monospace; font-size: 13px; line-height: 1.7; color: var(--ink); background: var(--panel-2); border-radius: 4px; padding: 8px 10px; overflow-x: auto; white-space: nowrap; }
+  .step[data-active="true"] .calc { display: block; }
+  .vi { color: var(--i); } .vj { color: var(--j); } .vp { color: var(--prod); }
+  .hat { font-style: italic; }
+
+  .note { color: var(--muted); font-size: 15.5px; max-width: 70ch; margin: 22px 0 0; }
+  .note b { color: var(--ink); font-weight: 500; }
+  .note .mono { font-size: 13.5px; }
+
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+
+<div class="page">
+  <header>
+    <h1>B first, then A</h1>
+    <p>Your script computes <code>C = A*B</code>. Read right to left: the grid is moved by B, then that result is moved by A. The product C is the one matrix that does both moves at once.</p>
+  </header>
+
+  <div class="main">
+    <div class="stage">
+      <div class="canvas-wrap">
+        <canvas id="cv"></canvas>
+        <div class="stage-label" id="stageLabel">grid at rest</div>
+        <div class="live"><span>grid now</span><span class="mat" id="liveMat"><span class="ci">1</span><span class="cj">0</span><span class="ci">0</span><span class="cj">1</span></span></div>
+      </div>
+      <div class="controls">
+        <button class="btn" id="prev" aria-label="Previous step">&#9664;</button>
+        <button class="btn primary" id="play">Play</button>
+        <button class="btn" id="next" aria-label="Next step">&#9654;</button>
+        <div class="scrub">
+          <input type="range" id="scrub" min="0" max="300" value="0" step="1" aria-label="Scrub through the transformation">
+        </div>
+        <div class="seg" role="group" aria-label="Order of multiplication">
+          <button id="orderAB" aria-pressed="true">AB &nbsp;&middot;&nbsp; B then A</button>
+          <button id="orderBA" aria-pressed="false">BA &nbsp;&middot;&nbsp; A then B</button>
+        </div>
+      </div>
+    </div>
+
+    <aside class="rail">
+      <div class="card">
+        <h2>The matrices (edit any cell)</h2>
+        <div class="eq" id="eqRow"></div>
+        <div class="presets">
+          <button class="btn" data-preset="file">From mat_mul_1.py</button>
+          <button class="btn" data-preset="rotshear">Rotate then shear</button>
+          <button class="btn" data-preset="scaleflip">Flip then scale</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>What happens, step by step</h2>
+        <div class="steps" id="steps"></div>
+      </div>
+    </aside>
+  </div>
+
+  <p class="note" id="note"></p>
+</div>
+
+<script>
+(function () {
+  const cv = document.getElementById('cv');
+  const ctx = cv.getContext('2d');
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // Matrices are [[a, b], [c, d]] with columns (a, c) = where \u00EE goes, (b, d) = where \u0135 goes.
+  const PRESETS = {
+    file:      { A: [[1, 2], [3, 4]], B: [[6, 7], [8, 9]] },
+    rotshear:  { A: [[1, 1], [0, 1]], B: [[0, -1], [1, 0]] },
+    scaleflip: { A: [[2, 0], [0, 0.5]], B: [[-1, 0], [0, 1]] },
+  };
+  let A = PRESETS.file.A.map(r => r.slice());
+  let B = PRESETS.file.B.map(r => r.slice());
+  let order = 'AB';      // 'AB' = B first then A;  'BA' = A first then B
+  let p = 0;             // progress 0..3
+  let playing = false;
+  let anim = null;
+
+  const mul = (M, N) => [
+    [M[0][0] * N[0][0] + M[0][1] * N[1][0], M[0][0] * N[0][1] + M[0][1] * N[1][1]],
+    [M[1][0] * N[0][0] + M[1][1] * N[1][0], M[1][0] * N[0][1] + M[1][1] * N[1][1]],
+  ];
+  const apply = (M, v) => [M[0][0] * v[0] + M[0][1] * v[1], M[1][0] * v[0] + M[1][1] * v[1]];
+  const det = M => M[0][0] * M[1][1] - M[0][1] * M[1][0];
+  const lerpM = (M, N, t) => M.map((r, i) => r.map((x, j) => x + (N[i][j] - x) * t));
+  const I = [[1, 0], [0, 1]];
+  const fmt = x => Number.isInteger(+x.toFixed(6)) ? String(Math.round(x)) : (+x.toFixed(2)).toString();
+  const vec = v => `(${fmt(v[0])}, ${fmt(v[1])})`;
+
+  function roles() {
+    const first = order === 'AB' ? B : A, second = order === 'AB' ? A : B;
+    return { first, second, firstName: order === 'AB' ? 'B' : 'A', secondName: order === 'AB' ? 'A' : 'B', product: mul(second, first), productName: order };
+  }
+  function stages() {
+    const r = roles();
+    return [I, r.first, r.product, r.product];
+  }
+  function currentM() {
+    const S = stages();
+    const k = Math.min(2, Math.floor(p));
+    return lerpM(S[k], S[k + 1], Math.min(1, p - k));
+  }
+
+  // ---------- camera ----------
+  function cameraFor(M, W, H) {
+    const pts = [[0, 0], [M[0][0], M[1][0]], [M[0][1], M[1][1]], [M[0][0] + M[0][1], M[1][0] + M[1][1]]];
+    let xmin = Math.min(...pts.map(q => q[0])), xmax = Math.max(...pts.map(q => q[0]));
+    let ymin = Math.min(...pts.map(q => q[1])), ymax = Math.max(...pts.map(q => q[1]));
+    const span = Math.max(xmax - xmin, ymax - ymin, 2.4);
+    const cx = (xmin + xmax) / 2, cy = (ymin + ymax) / 2;
+    const scale = Math.min(W, H) / (span * 1.55);
+    return { cx, cy, scale };
+  }
+  function currentCamera(W, H) {
+    const S = stages();
+    const k = Math.min(2, Math.floor(p));
+    const t = Math.min(1, p - k);
+    const c0 = cameraFor(S[k], W, H), c1 = cameraFor(S[k + 1], W, H);
+    return {
+      cx: c0.cx + (c1.cx - c0.cx) * t,
+      cy: c0.cy + (c1.cy - c0.cy) * t,
+      scale: Math.exp(Math.log(c0.scale) + (Math.log(c1.scale) - Math.log(c0.scale)) * t),
+    };
+  }
+  function nice(x) {
+    const e = Math.pow(10, Math.floor(Math.log10(x)));
+    for (const m of [1, 2, 5, 10]) if (m * e >= x) return m * e;
+    return 10 * e;
+  }
+
+  // ---------- drawing ----------
+  function css(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+
+  function draw() {
+    const dpr = window.devicePixelRatio || 1;
+    const W = cv.clientWidth, H = cv.clientHeight;
+    if (cv.width !== Math.round(W * dpr) || cv.height !== Math.round(H * dpr)) { cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); }
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, W, H);
+
+    const cam = currentCamera(W, H);
+    const s = cam.scale, ox = W / 2 - cam.cx * s, oy = H / 2 + cam.cy * s;
+    const toPx = v => [ox + v[0] * s, oy - v[1] * s];
+    const toWorld = q => [(q[0] - ox) / s, (oy - q[1]) / s];
+    const M = currentM();
+    const c1 = [M[0][0], M[1][0]], c2 = [M[0][1], M[1][1]];
+    const colGrid = css('--grid'), colAxis = css('--axis'), colLat = css('--lattice'), colI = css('--i'), colJ = css('--j'), colProd = css('--prod'), colFill = css('--prod-fill'), colPanel = css('--panel'), colMuted = css('--muted');
+
+    // fixed background grid
+    const step = nice(48 / s);
+    const wx0 = (0 - ox) / s, wx1 = (W - ox) / s, wy0 = (oy - H) / s, wy1 = oy / s;
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = colGrid;
+    ctx.beginPath();
+    for (let x = Math.floor(wx0 / step) * step; x <= wx1; x += step) { const q = toPx([x, 0]); ctx.moveTo(q[0], 0); ctx.lineTo(q[0], H); }
+    for (let y = Math.floor(wy0 / step) * step; y <= wy1; y += step) { const q = toPx([0, y]); ctx.moveTo(0, q[1]); ctx.lineTo(W, q[1]); }
+    ctx.stroke();
+    // axes
+    ctx.strokeStyle = colAxis; ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.moveTo(ox, 0); ctx.lineTo(ox, H); ctx.moveTo(0, oy); ctx.lineTo(W, oy); ctx.stroke();
+    // axis tick labels
+    ctx.font = '11px "JetBrains Mono", monospace'; ctx.fillStyle = colMuted; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    for (let x = Math.floor(wx0 / step) * step; x <= wx1; x += step) { if (Math.abs(x) < 1e-9) continue; const q = toPx([x, 0]); if (q[1] > H - 16) continue; ctx.fillText(fmt(x), q[0], Math.min(H - 14, q[1] + 3)); }
+    ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    for (let y = Math.floor(wy0 / step) * step; y <= wy1; y += step) { if (Math.abs(y) < 1e-9) continue; const q = toPx([0, y]); ctx.fillText(fmt(y), Math.max(22, q[0] - 4), q[1]); }
+
+    // transformed lattice: image of the integer grid under M
+    const d = det(M);
+    if (Math.abs(d) > 1e-6) {
+      const inv = [[M[1][1] / d, -M[0][1] / d], [-M[1][0] / d, M[0][0] / d]];
+      const corners = [[0, 0], [W, 0], [0, H], [W, H]].map(q => apply(inv, toWorld(q)));
+      const kmin = Math.min(...corners.map(q => q[0])), kmax = Math.max(...corners.map(q => q[0]));
+      const tmin = Math.min(...corners.map(q => q[1])), tmax = Math.max(...corners.map(q => q[1]));
+      const len1 = Math.hypot(c1[0], c1[1]), len2 = Math.hypot(c2[0], c2[1]);
+      const spacingK = Math.abs(d) * s / len2;   // px between consecutive "x = k" lines
+      const spacingT = Math.abs(d) * s / len1;
+      const kStep = nice(Math.max(14 / spacingK, 1e-9)), tStep = nice(Math.max(14 / spacingT, 1e-9));
+      ctx.strokeStyle = colLat; ctx.globalAlpha = 0.55; ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (let k = Math.floor(kmin / kStep) * kStep; k <= kmax; k += kStep) {
+        const a = toPx([k * c1[0] + tmin * c2[0], k * c1[1] + tmin * c2[1]]);
+        const b = toPx([k * c1[0] + tmax * c2[0], k * c1[1] + tmax * c2[1]]);
+        ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]);
+      }
+      for (let t = Math.floor(tmin / tStep) * tStep; t <= tmax; t += tStep) {
+        const a = toPx([kmin * c1[0] + t * c2[0], kmin * c1[1] + t * c2[1]]);
+        const b = toPx([kmax * c1[0] + t * c2[0], kmax * c1[1] + t * c2[1]]);
+        ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]);
+      }
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+
+    // image of the unit square
+    const P = [[0, 0], c1, [c1[0] + c2[0], c1[1] + c2[1]], c2].map(toPx);
+    ctx.fillStyle = colFill; ctx.strokeStyle = colProd; ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.moveTo(P[0][0], P[0][1]); for (let i = 1; i < 4; i++) ctx.lineTo(P[i][0], P[i][1]); ctx.closePath(); ctx.fill(); ctx.stroke();
+
+    // basis arrows (\u0135 under \u00EE so both tips stay visible)
+    const stageIdx = Math.round(p);
+    const r = roles();
+    const tag = stageIdx <= 0 ? '' : stageIdx === 1 ? ` = col of ${r.firstName}` : ` = col of ${r.productName}`;
+    arrow([0, 0], c2, colJ, `\u0135 ${vec(c2)}${tag}`, 1);
+    arrow([0, 0], c1, colI, `\u00EE ${vec(c1)}${tag}`, -1);
+
+    function arrow(from, to, color, label, side) {
+      const a = toPx(from), b = toPx(to);
+      const dx = b[0] - a[0], dy = b[1] - a[1], L = Math.hypot(dx, dy);
+      if (L < 1) return;
+      const ux = dx / L, uy = dy / L;
+      const head = Math.min(11, L * 0.4);
+      ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = 2.5; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0] - ux * head * 0.6, b[1] - uy * head * 0.6); ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(b[0], b[1]);
+      ctx.lineTo(b[0] - ux * head - uy * head * 0.5, b[1] - uy * head + ux * head * 0.5);
+      ctx.lineTo(b[0] - ux * head + uy * head * 0.5, b[1] - uy * head - ux * head * 0.5);
+      ctx.closePath(); ctx.fill();
+      // label: pushed past the tip and to one side so \u00EE and \u0135 never overprint
+      const lx = b[0] + ux * 12 - uy * 13 * side, ly = b[1] + uy * 12 + ux * 13 * side;
+      ctx.font = '500 13px "JetBrains Mono", monospace'; ctx.textBaseline = 'middle';
+      ctx.textAlign = lx < W / 2 ? 'left' : 'right';
+      const tx = Math.max(8, Math.min(W - 8, lx)), ty = Math.max(12, Math.min(H - 12, ly));
+      ctx.lineWidth = 4; ctx.strokeStyle = colPanel; ctx.lineJoin = 'round'; ctx.strokeText(label, tx, ty);
+      ctx.fillStyle = color; ctx.fillText(label, tx, ty);
+    }
+
+    // live matrix readout + stage label
+    const cells = document.querySelectorAll('#liveMat span');
+    [M[0][0], M[0][1], M[1][0], M[1][1]].forEach((x, i) => cells[i].textContent = fmt(x));
+    const labels = ['grid at rest', `after ${r.firstName}`, `after ${r.firstName}, then ${r.secondName}`, `after ${r.productName} in one move`];
+    document.getElementById('stageLabel').textContent = labels[Math.min(3, Math.round(p))];
+  }
+
+  // ---------- rail ----------
+  function matHTML(M, name, editable, colored) {
+    const cls = j => colored ? (j === 0 ? 'ci' : 'cj') : '';
+    const cell = (i, j) => editable
+      ? `<input type="number" step="any" class="${cls(j)}" data-m="${name}" data-i="${i}" data-j="${j}" value="${fmt(M[i][j])}" aria-label="${name} row ${i + 1} column ${j + 1}">`
+      : `<span class="${cls(j)}">${fmt(M[i][j])}</span>`;
+    return `<span class="mat">${cell(0, 0)}${cell(0, 1)}${cell(1, 0)}${cell(1, 1)}</span>`;
+  }
+  function renderEq() {
+    const r = roles();
+    const left = order === 'AB'
+      ? `<span class="mat-name">A</span>${matHTML(A, 'A', true, false)}<span class="mat-name">B</span>${matHTML(B, 'B', true, true)}`
+      : `<span class="mat-name">B</span>${matHTML(B, 'B', true, false)}<span class="mat-name">A</span>${matHTML(A, 'A', true, true)}`;
+    document.getElementById('eqRow').innerHTML = `${left}<span class="grp"><span class="op">=</span><span class="mat-name">${r.productName}</span>${matHTML(r.product, 'C', false, true)}</span>`;
+    document.querySelectorAll('#eqRow input').forEach(inp => inp.addEventListener('input', onEdit));
+  }
+  function onEdit(e) {
+    const { m, i, j } = e.target.dataset;
+    const v = parseFloat(e.target.value);
+    if (!Number.isFinite(v)) return;
+    (m === 'A' ? A : B)[+i][+j] = v;
+    renderSteps(); renderNote(); draw();
+    // refresh only the computed product so the field being typed in keeps focus
+    const r = roles();
+    const prodCells = document.querySelectorAll('#eqRow .mat:last-of-type span');
+    [r.product[0][0], r.product[0][1], r.product[1][0], r.product[1][1]].forEach((x, k) => prodCells[k].textContent = fmt(x));
+  }
+
+  function renderSteps() {
+    const r = roles();
+    const F = r.first, S = r.second, C = r.product;
+    const fi = [F[0][0], F[1][0]], fj = [F[0][1], F[1][1]];
+    const si = [S[0][0], S[1][0]], sj = [S[0][1], S[1][1]];
+    const ci = [C[0][0], C[1][0]], cj = [C[0][1], C[1][1]];
+    const comb = (v, nm) => `${nm}${vec(v)} = ${fmt(v[0])}\u00B7<span class="vi">${vec(si)}</span> + ${fmt(v[1])}\u00B7<span class="vj">${vec(sj)}</span> = <b>${vec(apply(S, v))}</b>`;
+    const steps = [
+      { t: 'The plane at rest', p: `<span class="vi">\u00EE</span> sits at (1, 0) and <span class="vj">\u0135</span> at (0, 1). The yellow square is the unit square. Everything a matrix does is decided by where these two arrows go.`, calc: '' },
+      { t: `${r.firstName} moves first`, p: `The columns of ${r.firstName} are the landing spots. First column: where <span class="vi">\u00EE</span> lands. Second column: where <span class="vj">\u0135</span> lands. The whole grid follows, staying evenly spaced.`,
+        calc: `<span class="vi">\u00EE \u2192 ${vec(fi)}</span><br><span class="vj">\u0135 \u2192 ${vec(fj)}</span>` },
+      { t: `Then ${r.secondName} moves the result`, p: `${r.secondName} does not know it is acting on a moved grid. It just sends whatever it is given: ${vec(fi)} means "${fmt(fi[0])} of \u00EE plus ${fmt(fi[1])} of \u0135", and ${r.secondName} knows where those go.`,
+        calc: `${r.secondName}\u00B7${comb(fi, '')}<br>${r.secondName}\u00B7${comb(fj, '')}` },
+      { t: `That is the product ${r.productName}`, p: `The columns of ${r.productName} are exactly where <span class="vi">\u00EE</span> and <span class="vj">\u0135</span> ended up. Applying ${r.productName} alone jumps the grid straight here in one move. Two transformations, one matrix.`,
+        calc: `${r.productName} = ${r.secondName}${r.firstName}: <span class="vi">\u00EE \u2192 ${vec(ci)}</span>, <span class="vj">\u0135 \u2192 ${vec(cj)}</span>` },
+    ];
+    const cur = Math.round(p);
+    document.getElementById('steps').innerHTML = steps.map((st, k) =>
+      `<div class="step" data-k="${k}" data-active="${k === cur}"><div class="dot"></div><div><h3>${st.t}</h3><p>${st.p}</p>${st.calc ? `<div class="calc">${st.calc}</div>` : ''}</div></div>`).join('');
+    document.querySelectorAll('.step').forEach(el => el.addEventListener('click', () => goTo(+el.dataset.k)));
+  }
+  function setActiveStep() {
+    const cur = Math.round(p);
+    document.querySelectorAll('.step').forEach(el => el.dataset.active = String(+el.dataset.k === cur));
+  }
+  function renderNote() {
+    const r = roles();
+    const other = mul(r.first, r.second);
+    const dA = det(A), dB = det(B), dC = det(r.product);
+    const flips = (dA < 0 ? 1 : 0) + (dB < 0 ? 1 : 0);
+    const flipText = flips === 0 ? 'Neither flips the plane over, so the product keeps its orientation.'
+      : flips === 1 ? 'One of them flips the plane over (negative determinant), so the product is flipped too.'
+      : 'Each one flips the plane over (negative determinant). Two flips cancel, so the product is not flipped.';
+    document.getElementById('note').innerHTML =
+      `<b>Order matters.</b> ${r.secondName}${r.firstName} sends \u00EE to ${vec([r.product[0][0], r.product[1][0]])}, but ${r.firstName}${r.secondName} sends it to ${vec([other[0][0], other[1][0]])}. Putting on socks then shoes is not the same as shoes then socks. ` +
+      `<b>Areas multiply.</b> The unit square becomes a parallelogram of area <span class="mono">|det|</span>: <span class="mono">det A = ${fmt(dA)}</span>, <span class="mono">det B = ${fmt(dB)}</span>, and <span class="mono">det ${r.productName} = ${fmt(dC)} = (${fmt(dA)})(${fmt(dB)})</span>. ${flipText}` +
+      (order === 'AB' && A[0][0] === 1 && A[0][1] === 2 && B[0][0] === 6 && B[0][1] === 7
+        ? ` In your example both matrices squash the plane into a thin sliver, which is why the two arrows end up almost on top of each other. Try the other presets to see a roomier picture.` : '');
+  }
+
+  // ---------- playback ----------
+  function setP(v) {
+    p = Math.max(0, Math.min(3, v));
+    document.getElementById('scrub').value = Math.round(p * 100);
+    setActiveStep();
+    draw();
+  }
+  function goTo(target, ms = 900) {
+    if (anim) cancelAnimationFrame(anim);
+    stopPlay();
+    if (reduced) { setP(target); return; }
+    const from = p, t0 = performance.now();
+    const ease = x => x < 0.5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2;
+    const tick = now => {
+      const t = Math.min(1, (now - t0) / ms);
+      setP(from + (target - from) * ease(t));
+      if (t < 1) anim = requestAnimationFrame(tick); else anim = null;
+    };
+    anim = requestAnimationFrame(tick);
+  }
+  const playBtn = document.getElementById('play');
+  function stopPlay() { playing = false; playBtn.textContent = 'Play'; }
+  function startPlay() {
+    if (anim) cancelAnimationFrame(anim);
+    if (p >= 3) setP(0);
+    playing = true; playBtn.textContent = 'Pause';
+    if (reduced) { setP(3); stopPlay(); return; }
+    let last = performance.now();
+    const tick = now => {
+      if (!playing) return;
+      const dt = (now - last) / 1000; last = now;
+      const near = Math.abs(p - Math.round(p)) < 0.02 && Math.round(p) !== 0 && Math.round(p) !== 3;
+      setP(p + dt * (near ? 0.25 : 0.7));   // linger briefly at each landing
+      if (p >= 3) { stopPlay(); return; }
+      anim = requestAnimationFrame(tick);
+    };
+    anim = requestAnimationFrame(tick);
+  }
+  playBtn.addEventListener('click', () => playing ? stopPlay() : startPlay());
+  document.getElementById('prev').addEventListener('click', () => goTo(Math.max(0, Math.ceil(p - 0.001) - 1)));
+  document.getElementById('next').addEventListener('click', () => goTo(Math.min(3, Math.floor(p + 0.001) + 1)));
+  document.getElementById('scrub').addEventListener('input', e => { if (anim) cancelAnimationFrame(anim); stopPlay(); setP(e.target.value / 100); });
+  document.addEventListener('keydown', e => {
+    if (e.target.tagName === 'INPUT' && e.target.type !== 'range') return;
+    if (e.key === 'ArrowRight') { e.preventDefault(); document.getElementById('next').click(); }
+    if (e.key === 'ArrowLeft') { e.preventDefault(); document.getElementById('prev').click(); }
+    if (e.key === ' ') { e.preventDefault(); playBtn.click(); }
+  });
+
+  function setOrder(o) {
+    order = o;
+    document.getElementById('orderAB').setAttribute('aria-pressed', String(o === 'AB'));
+    document.getElementById('orderBA').setAttribute('aria-pressed', String(o === 'BA'));
+    renderEq(); renderSteps(); renderNote(); draw();
+  }
+  document.getElementById('orderAB').addEventListener('click', () => setOrder('AB'));
+  document.getElementById('orderBA').addEventListener('click', () => setOrder('BA'));
+  document.querySelectorAll('[data-preset]').forEach(b => b.addEventListener('click', () => {
+    const pr = PRESETS[b.dataset.preset];
+    A = pr.A.map(r => r.slice()); B = pr.B.map(r => r.slice());
+    renderEq(); renderSteps(); renderNote(); goTo(0, 500);
+  }));
+
+  window.addEventListener('resize', draw);
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', draw);
+  new MutationObserver(draw).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+  document.fonts && document.fonts.ready.then(draw);
+
+  renderEq(); renderSteps(); renderNote(); setP(0);
+})();
+</script>
+
+</body>
+</html>
