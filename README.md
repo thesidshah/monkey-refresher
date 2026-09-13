@@ -62,16 +62,7 @@ Week-1/
   mat_mul_1.py                  matmul warmups in numpy
   mat_mul_1_viz*.html           row-meets-column animations
   tensor_notes.md               the cheat sheet the monkey keeps re-reading
-private/                        git submodule, private repo, nothing to see here
 ```
-
-## About that `private/` folder
-
-It is a git submodule pointing at a private repo. You can see the pointer and
-the URL, and that is all. Cloning it without access gives you an empty folder
-and a polite refusal. It holds schedules and notes the monkey doesn't want
-graded. It also exists so the monkey could learn how submodules work, which
-turned out to be its own kind of refresher.
 
 ## Roadmap, loosely
 
