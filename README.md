@@ -3,7 +3,7 @@
 *Give a monkey a GPU and it will `torch.zeros(8, 1, 6, 1)` something.*
 
 This is a bag of small, self-checking drills for the moments when you open a
-PyTorch file after three weeks away and your brain returns `NaN`. Every exercise
+PyTorch file, stare at a shape, and your brain returns `NaN`. Every exercise
 comes with an `assert`, so the repo tells you when you're wrong before a code
 reviewer does.
 
